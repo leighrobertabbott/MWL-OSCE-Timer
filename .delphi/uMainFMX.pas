@@ -177,6 +177,8 @@ type
     procedure BtnExportClick(Sender: TObject);
     procedure TrackRateChange(Sender: TObject);
     procedure TrackVolumeChange(Sender: TObject);
+    procedure OnStationTimeChange(Sender: TObject);
+    procedure OnStationNameChange(Sender: TObject);
     
     procedure OnTimerTick(Sender: TObject; SecondsRemaining: Double; Progress: Double);
     procedure UpdateStationTimers(SecondsRemaining: Double);
@@ -1243,6 +1245,7 @@ begin
   EdtName.Tag := AStation.ID;
   EdtName.StyledSettings := [];
   EdtName.TextSettings.FontColor := TAlphaColorRec.Black;
+  EdtName.OnChange := OnStationNameChange;
   
   // Activity
   LblActLabel := TLabel.Create(Card);
@@ -1273,6 +1276,7 @@ begin
   EdtActivity.Tag := AStation.ID;
   EdtActivity.StyledSettings := [];
   EdtActivity.TextSettings.FontColor := TAlphaColorRec.Black;
+  EdtActivity.OnChange := OnStationTimeChange;
   
   // Feedback
   LblFbkLabel := TLabel.Create(Card);
@@ -1303,6 +1307,7 @@ begin
   EdtFeedback.Tag := AStation.ID;
   EdtFeedback.StyledSettings := [];
   EdtFeedback.TextSettings.FontColor := TAlphaColorRec.Black;
+  EdtFeedback.OnChange := OnStationTimeChange;
   
   // Total
   LblTotalLabel := TLabel.Create(Card);
@@ -1373,6 +1378,103 @@ begin
   end;
   StationsManager.Remove(TRectangle(Sender).Tag);
   RefreshStationsList;
+end;
+
+procedure TMainForm.OnStationTimeChange(Sender: TObject);
+var
+  Edt: TEdit;
+  StationID, ActivityTime, FeedbackTime: Integer;
+  Station: TStation;
+  Row: TLayout;
+  I: Integer;
+  LblTotal: TLabel;
+  Child: TFmxObject;
+begin
+  Edt := TEdit(Sender);
+  StationID := Edt.Tag;
+  
+  // Get current station data
+  Station := StationsManager.GetByID(StationID);
+  if Station.ID = 0 then Exit;
+  
+  // Read current values from the UI
+  // Find the row with this station ID
+  for I := 0 to FStationRows.Count - 1 do
+  begin
+    Row := FStationRows[I];
+    if Row.Tag = StationID then
+    begin
+      // Find activity and feedback edits in this row
+      ActivityTime := Station.ActivityTime;
+      FeedbackTime := Station.FeedbackTime;
+      
+      // Traverse children to find the edits
+      for Child in Row.Children do
+      begin
+        if Child is TRectangle then
+        begin
+          var Card := TRectangle(Child);
+          for var SubChild in Card.Children do
+          begin
+            if SubChild is TRectangle then
+            begin
+              var Bg := TRectangle(SubChild);
+              for var EditChild in Bg.Children do
+              begin
+                if EditChild is TEdit then
+                begin
+                  var Ed := TEdit(EditChild);
+                  if Ed.Tag = StationID then
+                  begin
+                    // Determine by position which field this is
+                    if Bg.Position.X < 450 then
+                      ActivityTime := StrToIntDef(Ed.Text, Station.ActivityTime)
+                    else if Bg.Position.X < 550 then
+                      FeedbackTime := StrToIntDef(Ed.Text, Station.FeedbackTime);
+                  end;
+                end;
+              end;
+            end;
+          end;
+          
+          // Find and update the Total label
+          for var SubChild2 in Card.Children do
+          begin
+            if SubChild2 is TLabel then
+            begin
+              var Lbl := TLabel(SubChild2);
+              if (Lbl.Position.X >= 550) and (Lbl.Position.Y > 10) then
+              begin
+                Lbl.Text := IntToStr(ActivityTime + FeedbackTime) + ' min';
+                Break;
+              end;
+            end;
+          end;
+        end;
+      end;
+      
+      // Update station in manager
+      StationsManager.Update(StationID, Station.Name, ActivityTime, FeedbackTime);
+      Break;
+    end;
+  end;
+end;
+
+procedure TMainForm.OnStationNameChange(Sender: TObject);
+var
+  Edt: TEdit;
+  StationID: Integer;
+  Station: TStation;
+begin
+  Edt := TEdit(Sender);
+  StationID := Edt.Tag;
+  
+  // Get current station data
+  Station := StationsManager.GetByID(StationID);
+  if Station.ID = 0 then Exit;
+  
+  // Update station name
+  StationsManager.Update(StationID, Edt.Text, Station.ActivityTime, Station.FeedbackTime);
 end;
 
 procedure TMainForm.BtnStartClick(Sender: TObject);
