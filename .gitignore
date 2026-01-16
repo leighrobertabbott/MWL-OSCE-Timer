@@ -1,0 +1,30 @@
+# Delphi build artifacts
+*.dcu
+*.exe
+*.res
+*.identcache
+*.dproj.local
+*.~*
+__history/
+__recovery/
+Win32/
+Win64/
+OSX/
+Linux/
+
+# IDE files
+*.dsk
+*.dsm
+*.local
+
+# Compiled units
+.delphi/__recovery/
+.delphi/Win32/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.tmp

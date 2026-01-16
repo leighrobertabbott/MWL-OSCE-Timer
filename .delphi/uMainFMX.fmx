@@ -1,0 +1,12 @@
+object MainForm: TMainForm
+  Left = 0
+  Top = 0
+  Caption = 'OSCE Timing System'
+  ClientHeight = 800
+  ClientWidth = 1200
+  Fill.Color = xFF121212
+  Fill.Kind = Solid
+  FormFactor.Width = 1200
+  FormFactor.Height = 800
+  FormFactor.Devices = [Desktop]
+end

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSCE Timing System</title>
+    <meta name="description" content="Professional OSCE examination timing system with voice synthesis">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 id="modalTitle">Confirm Action</h3>
+            <p id="modalMessage">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button id="modalCancel" class="btn btn-secondary">Cancel</button>
+                <button id="modalConfirm" class="btn btn-danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <h1 class="nhs-trust">Mersey and West Lancashire NHS</h1>
+                <h2 class="app-subtitle">Clinical Education OSCE Timer Application</h2>
+            </div>
+            <div class="header-controls">
+                <button id="muteBtn" class="btn btn-icon" title="Toggle Sound (M)">
+                    <svg class="icon-sound" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <svg class="icon-muted hidden" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Setup Panel (shown before exam starts) -->
+        <section id="setupPanel" class="panel setup-panel">
+            <div class="panel-header">
+                <h2>Exam Configuration</h2>
+            </div>
+
+            <div class="setup-grid">
+                <!-- General Settings -->
+                <details class="setup-card" open>
+                    <summary>
+                        <h3>General</h3>
+                    </summary>
+                    <div class="details-content">
+                        <div class="form-group">
+                            <label for="startTime">Start Time</label>
+                            <input type="time" id="startTime" value="13:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="numCandidates">Number of Candidates</label>
+                            <input type="number" id="numCandidates" value="5" min="1" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="readTime">Read Time (seconds)</label>
+                            <input type="number" id="readTime" value="60" min="0" max="300">
+                        </div>
+                        <div class="form-group">
+                            <label for="changeoverTime">Changeover Time (seconds)</label>
+                            <input type="number" id="changeoverTime" value="60" min="10" max="300">
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Voice Settings -->
+                <details class="setup-card" open>
+                    <summary>
+                        <h3>Voice</h3>
+                    </summary>
+                    <div class="details-content">
+                        <div class="form-group">
+                            <label for="voiceSelect">Select Voice</label>
+                            <select id="voiceSelect">
+                                <option value="">Loading voices...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="voiceRate">Speech Rate</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
+                                <span id="voiceRateValue">1.0x</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="voiceVolume">Volume</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
+                                <span id="voiceVolumeValue">100%</span>
+                            </div>
+                        </div>
+                        <button id="testVoiceBtn" class="btn btn-secondary btn-sm">Test Voice</button>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Stations Configuration -->
+            <details class="setup-card stations-config" open>
+                <summary>
+                    <h3>Stations</h3>
+                </summary>
+                <div class="details-content">
+                    <div class="stations-header-actions">
+                        <button id="addStationBtn" class="btn btn-primary btn-sm">Add Station</button>
+                    </div>
+                    <div id="stationsList" class="stations-list">
+                        <!-- Stations will be dynamically inserted here -->
+                    </div>
+                </div>
+            </details>
+
+            <!-- Announcements Configuration -->
+            <details class="setup-card announcements-config" open>
+                <summary>
+                    <h3>Voice Announcements</h3>
+                </summary>
+                <div class="details-content">
+                    <p class="help-text">Toggle announcements on/off. These play for the whole room.</p>
+                    <div class="announcements-list">
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annReadStartEnabled" checked>
+                                <label for="annReadStartEnabled">Read Start</label>
+                            </div>
+                            <textarea id="annReadStart"
+                                rows="1">Please read your instructions. You have 1 minute.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annActivityStartEnabled" checked>
+                                <label for="annActivityStartEnabled">Activity Start</label>
+                            </div>
+                            <textarea id="annActivityStart"
+                                rows="1">Please begin. You have {time} minutes for the activity phase.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annTwoMinWarningEnabled" checked>
+                                <label for="annTwoMinWarningEnabled">2-Minute Warning</label>
+                            </div>
+                            <textarea id="annTwoMinWarning" rows="1">Two minutes remaining.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annActivityEndEnabled" checked>
+                                <label for="annActivityEndEnabled">Activity End</label>
+                            </div>
+                            <textarea id="annActivityEnd"
+                                rows="1">Please stop. You may now begin feedback and questions.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annOneMinWarningEnabled" checked>
+                                <label for="annOneMinWarningEnabled">1-Minute Warning</label>
+                            </div>
+                            <textarea id="annOneMinWarning" rows="1">One minute remaining.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annStationEndEnabled" checked>
+                                <label for="annStationEndEnabled">Round Complete</label>
+                            </div>
+                            <textarea id="annStationEnd"
+                                rows="1">This round is now complete. Please prepare to rotate.</textarea>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-toggle">
+                                <input type="checkbox" id="annChangeoverEnabled" checked>
+                                <label for="annChangeoverEnabled">Changeover</label>
+                            </div>
+                            <textarea id="annChangeover"
+                                rows="1">Please move to your next station and read the instructions.</textarea>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Start Button -->
+            <div class="setup-actions">
+                <button id="saveConfigBtn" class="btn btn-secondary">Save Settings</button>
+                <button id="exportConfigBtn" class="btn btn-secondary">Export File</button>
+                <button id="importConfigBtn" class="btn btn-secondary">Import File</button>
+                <button id="startExamBtn" class="btn btn-primary btn-lg">Start Exam</button>
+            </div>
+        </section>
+
+        <!-- Timer Panel (shown during exam) -->
+        <section id="timerPanel" class="panel timer-panel hidden">
+            <!-- Current Phase Display -->
+            <div class="timer-display">
+                <div class="phase-indicator" id="phaseIndicator">
+                    <span class="phase-label">ACTIVITY</span>
+                </div>
+
+                <div class="countdown-container">
+                    <div class="countdown" id="countdown">00:00</div>
+                    <div class="countdown-label" id="countdownLabel">Time Remaining</div>
+                </div>
+
+                <div class="station-info">
+                    <h2 id="currentStationName">History Taking</h2>
+                    <p id="currentStationDesc">Station 1 of 5</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar segmented">
+                    <div class="progress-segment" id="seg-read">
+                        <div class="progress-fill read"></div>
+                    </div>
+                    <div class="progress-segment" id="seg-activity">
+                        <div class="progress-fill activity"></div>
+                    </div>
+                    <div class="progress-segment" id="seg-feedback">
+                        <div class="progress-fill feedback"></div>
+                    </div>
+                    <div class="progress-segment" id="seg-changeover">
+                        <div class="progress-fill changeover"></div>
+                    </div>
+                </div>
+                <div class="progress-labels">
+                    <span>Read</span>
+                    <span>Activity</span>
+                    <span>Feedback</span>
+                    <span>Changeover</span>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="timer-controls">
+                <button id="pauseBtn" class="btn btn-warning btn-lg">
+                    <span class="pause-text">Pause</span>
+                    <span class="resume-text hidden">Resume</span>
+                </button>
+                <button id="skipPhaseBtn" class="btn btn-secondary btn-lg">Skip Phase</button>
+                <button id="restartStationBtn" class="btn btn-secondary btn-lg">Restart Round</button>
+                <button id="stopExamBtn" class="btn btn-danger btn-lg">Stop Exam</button>
+            </div>
+
+            <!-- Pause Overlay -->
+            <div id="pauseOverlay" class="pause-overlay hidden">
+                <div class="pause-content">
+                    <h2>PAUSED</h2>
+                    <p>Press Resume or Space to continue</p>
+                    <div class="pause-time" id="pauseTime">Paused at: --:--</div>
+                </div>
+            </div>
+
+            <!-- Candidates Progress Grid -->
+            <div class="candidates-grid">
+                <h3>Candidates</h3>
+                <div id="candidatesProgress" class="progress-grid">
+                    <!-- Dynamically generated -->
+                </div>
+            </div>
+
+            <!-- Upcoming Announcements -->
+            <div class="upcoming-section">
+                <h3>Next Announcement</h3>
+                <div id="nextAnnouncement" class="announcement-preview">
+                    <span class="announcement-time">--:--</span>
+                    <span class="announcement-text">No upcoming announcements</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-shortcuts">
+                Shortcuts: <kbd>Space</kbd> Pause · <kbd>M</kbd> Mute · <kbd>R</kbd> Restart
+            </div>
+            <div class="footer-attribution">
+                <div class="footer-designed">Designed &amp; Developed by</div>
+                <div class="footer-name">Leigh Robert Abbott</div>
+                <div class="footer-meta">
+                    <span>Clinical Education and Simulation</span>
+                    <span class="separator">•</span>
+                    <span>Nightingale House</span>
+                    <span class="separator">•</span>
+                    <a href="mailto:leigh.abbott@merseywestlancs.nhs.uk">leigh.abbott@merseywestlancs.nhs.uk</a>
+                    <span class="separator">•</span>
+                    <span>leighrobertabbott</span>
+                </div>
+                <div class="footer-disclaimer">
+                    This is an internal application developed by the Clinical Education Team (Leigh Abbott) and is not
+                    associated with MWL's IT Development Team or Informatics.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/voice.js"></script>
+    <script src="js/timer.js"></script>
+    <script src="js/stations.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
