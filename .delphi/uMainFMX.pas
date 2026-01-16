@@ -1156,6 +1156,9 @@ var
   I: Integer;
   Stations: TStationList;
 begin
+  // Free all existing UI row controls before rebuilding
+  for I := FStationRows.Count - 1 downto 0 do
+    FStationRows[I].Free;
   FStationRows.Clear;
   
   // Calculate Station Layout Height
