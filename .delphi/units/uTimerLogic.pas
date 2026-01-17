@@ -186,7 +186,8 @@ begin
     end;
   end;
 
-  if Remaining = 60 then
+  // 1-minute warning - only during Activity or Feedback phases
+  if (FCurrentPhase in [phActivity, phFeedback]) and (Remaining = 60) then
   begin
     if not FAnnouncementsMade.Contains('1min') then
     begin

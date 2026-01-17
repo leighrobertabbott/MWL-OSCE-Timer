@@ -42,7 +42,8 @@ type
     function GetFeedbackSeconds(AIndex: Integer): Integer;
     function GetTotalSeconds(AIndex: Integer): Integer;
     function GetMaxActivityTime: Integer;  // in minutes
-    function GetMaxTotalTime: Integer;     // in minutes
+    function GetMaxFeedbackTime: Integer;   // in minutes
+    function GetMaxTotalTime: Integer;      // in minutes
     function GetTotalExamTime(AChangeoverSeconds, ANumCandidates: Integer): Integer;
 
     // Serialization
@@ -258,6 +259,16 @@ begin
   for I := 0 to FStations.Count - 1 do
     if FStations[I].ActivityTime > Result then
       Result := FStations[I].ActivityTime;
+end;
+
+function TStationsManager.GetMaxFeedbackTime: Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FStations.Count - 1 do
+    if FStations[I].FeedbackTime > Result then
+      Result := FStations[I].FeedbackTime;
 end;
 
 function TStationsManager.GetMaxTotalTime: Integer;

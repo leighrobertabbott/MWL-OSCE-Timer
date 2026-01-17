@@ -107,7 +107,7 @@ type
     FBtnStop: TRectangle;
     
     // Candidates
-    FCandidatesScrollBox: THorzScrollBox;
+    FCandidatesScrollBox: TScrollBox;
     FCandidatesLayout: TLayout;
     FCandidateCards: TList<TRectangle>;
     
@@ -767,7 +767,7 @@ begin
   FLblCountdown := TLabel.Create(FTimerPanel);
   FLblCountdown.Parent := FTimerPanel;
   FLblCountdown.Position.X := 0;
-  FLblCountdown.Position.Y := 80;
+  FLblCountdown.Position.Y := 60;
   FLblCountdown.Width := 1200;
   FLblCountdown.Height := 180;
   FLblCountdown.Text := '00:00';
@@ -783,7 +783,7 @@ begin
   FLblRound := TLabel.Create(FTimerPanel);
   FLblRound.Parent := FTimerPanel;
   FLblRound.Position.X := 0;
-  FLblRound.Position.Y := 270;
+  FLblRound.Position.Y := 230;
   FLblRound.Width := 1200;
   FLblRound.Height := 50;
   FLblRound.Text := 'Round 1';
@@ -797,7 +797,7 @@ begin
   FLblRoundInfo := TLabel.Create(FTimerPanel);
   FLblRoundInfo.Parent := FTimerPanel;
   FLblRoundInfo.Position.X := 0;
-  FLblRoundInfo.Position.Y := 320;
+  FLblRoundInfo.Position.Y := 275;
   FLblRoundInfo.Width := 1200;
   FLblRoundInfo.Height := 30;
   FLblRoundInfo.Text := '5 candidates at 5 stations';
@@ -811,7 +811,7 @@ begin
   FProgressLayout := TLayout.Create(FTimerPanel);
   FProgressLayout.Parent := FTimerPanel;
   FProgressLayout.Position.X := 100;
-  FProgressLayout.Position.Y := 360;
+  FProgressLayout.Position.Y := 320;
   FProgressLayout.Width := 1000;
   FProgressLayout.Height := 50;
   FProgressLayout.Anchors := [TAnchorKind.akLeft, TAnchorKind.akTop, TAnchorKind.akRight];
@@ -944,10 +944,10 @@ begin
   // Buttons moved to Bottom Stack logic below (after Candidates)
   
   // === CANDIDATES GRID (Bottom-Aligned, bottommost) ===
-  FCandidatesScrollBox := THorzScrollBox.Create(FTimerPanel);
+  FCandidatesScrollBox := TScrollBox.Create(FTimerPanel);
   FCandidatesScrollBox.Parent := FTimerPanel;
   FCandidatesScrollBox.Align := TAlignLayout.Bottom;
-  FCandidatesScrollBox.Height := 130;
+  FCandidatesScrollBox.Height := 230; // 2 rows of candidates
   FCandidatesScrollBox.ShowScrollBars := True;
   
   FCandidatesLayout := TLayout.Create(FCandidatesScrollBox);
@@ -972,7 +972,7 @@ begin
   ButtonLayout.Parent := FTimerPanel;
   ButtonLayout.Align := TAlignLayout.Bottom;
   ButtonLayout.Height := 60;
-  ButtonLayout.Margins.Bottom := 20;
+  ButtonLayout.Margins.Bottom := 10;
   
   // Buttons centered directly in ButtonLayout
   // Total button width: 140+20+140+20+160+20+140 = 640px (with 20px gaps)
@@ -1977,7 +1977,7 @@ begin
     phActivity:
       begin
         VoiceManager.Speak(GetAnnouncementText('Activity End', 'Please stop. Begin feedback.'), True);
-        FTimer.Start(StationsManager.GetMaxTotalTime * 60 - StationsManager.GetMaxActivityTime * 60, phFeedback);
+        FTimer.Start(StationsManager.GetMaxFeedbackTime * 60, phFeedback);
         FPhaseBadge.Fill.Color := CLR_PHASE_FEEDBACK;
         FLblPhase.Text := 'FEEDBACK';
       end;
@@ -2021,6 +2021,30 @@ begin
   // Ensure candidates are updated for the new phase (AFTER timer start so CurrentPhase is correct)
   UpdateCandidateGrid;
   UpdateStationTimers(FTimer.SecondsRemaining);
+end;
+
+procedure TMainForm.OnAnnouncement(Sender: TObject; AnnouncementType: string; SecondsRemaining: Integer);
+begin
+  if AnnouncementType = 'twoMinWarning' then
+  begin
+    if FConfig.Announcements.TwoMinWarningEnabled then
+      VoiceManager.Speak(GetAnnouncementText('2-Minute Warning', 'Two minutes remaining.'), True);
+  end
+  else if AnnouncementType = 'oneMinWarning' then
+  begin
+    if FConfig.Announcements.OneMinWarningEnabled then
+      VoiceManager.Speak(GetAnnouncementText('1-Minute Warning', 'One minute remaining.'), True);
+  end
+  else if AnnouncementType = 'thirtySecWarning' then
+  begin
+    VoiceManager.Speak('30 seconds remaining.', True);
+  end
+  else if AnnouncementType = 'countdown' then
+  begin
+    // Optional: Speak countdown numbers
+    if SecondsRemaining <= 5 then
+      VoiceManager.Speak(IntToStr(SecondsRemaining), True);
+  end;
 end;
 
 function PhaseToColor(APhase: TExamPhase): TAlphaColor;
@@ -2105,25 +2129,34 @@ var
   Card: TRectangle;
   LblName, LblStation, LblStatus: TLabel;
   NumCandidates: Integer;
-  CardWidth: Single;
+  CardWidth, CardHeight: Single;
+  CardsPerRow, Row, Col, NumRows: Integer;
 begin
   for I := FCandidateCards.Count - 1 downto 0 do
     FCandidateCards[I].Free;
   FCandidateCards.Clear;
   
   NumCandidates := StrToIntDef(FEdtCandidates.Text, 5);
-  CardWidth := 220;
+  CardWidth := 160;
+  CardHeight := 100;
+  CardsPerRow := 6;
+  NumRows := ((NumCandidates - 1) div CardsPerRow) + 1;
   
-  FCandidatesLayout.Width := NumCandidates * (CardWidth + 10) + 20;
+  // Set layout width for horizontal scrolling if needed
+  FCandidatesLayout.Width := Min(NumCandidates, CardsPerRow) * (CardWidth + 10) + 20;
+  FCandidatesLayout.Height := NumRows * (CardHeight + 10) + 10;
   
   for I := 0 to NumCandidates - 1 do
   begin
+    Row := I div CardsPerRow;
+    Col := I mod CardsPerRow;
+    
     Card := TRectangle.Create(FCandidatesLayout);
     Card.Parent := FCandidatesLayout;
-    Card.Position.X := 10 + (I * (CardWidth + 10));
-    Card.Position.Y := 10;
+    Card.Position.X := 10 + (Col * (CardWidth + 10));
+    Card.Position.Y := 10 + (Row * (CardHeight + 10));
     Card.Width := CardWidth;
-    Card.Height := 100;
+    Card.Height := CardHeight;
     Card.Fill.Color := CLR_BG_ELEVATED;
     Card.Stroke.Color := CLR_BORDER;
     Card.XRadius := 6;
@@ -2326,14 +2359,6 @@ begin
         FProgressChangeoverFill.Width := FullWidth * AProgress;
     end;
   end;
-end;
-
-procedure TMainForm.OnAnnouncement(Sender: TObject; AnnouncementType: string;
-  SecondsRemaining: Integer);
-begin
-  // Show announcement toast or flash screen
-  // For now just ensure UI is updated
-  UpdateCountdown(SecondsRemaining);
 end;
 
 procedure TMainForm.FormResize(Sender: TObject);
