@@ -180,6 +180,7 @@ type
     procedure BtnSaveClick(Sender: TObject);
     procedure BtnExportClick(Sender: TObject);
     procedure BtnImportClick(Sender: TObject);
+    procedure OnVoiceChange(Sender: TObject);
     procedure TrackRateChange(Sender: TObject);
     procedure TrackVolumeChange(Sender: TObject);
     procedure OnStationTimeChange(Sender: TObject);
@@ -547,6 +548,7 @@ begin
   FCboVoice.Position.Y := Y + 20;
   FCboVoice.Width := 450;
   FCboVoice.Height := 36;
+  FCboVoice.OnChange := OnVoiceChange;
   
   Y := Y + 70;
   
@@ -1661,6 +1663,14 @@ begin
     end;
   finally
     Dlg.Free;
+  end;
+end;
+
+procedure TMainForm.OnVoiceChange(Sender: TObject);
+begin
+  if FCboVoice.ItemIndex >= 0 then
+  begin
+    VoiceManager.SetVoiceByIndex(FCboVoice.ItemIndex);
   end;
 end;
 
