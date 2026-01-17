@@ -300,10 +300,7 @@ begin
   LblAnnHeader.Align := TAlignLayout.Top;
   LblAnnHeader.Height := 24;
   LblAnnHeader.Margins.Left := (1024 - (5 * 230)) / 2; // Match Candidates Grid approx center
-  // Actually better to just Left Align with a standard margin or Center.
-  // Given desktop window size varies, Centered relative to layout is safer?
-  // Web app aligns it left of the box. The box is centered.
-  // Let's create a Centered Container for the content inside the Layout.
+  LblAnnHeader.Margins.Left := (1024 - (5 * 230)) / 2; // Match Candidates Grid approx center
   
   var AnnContainer := TLayout.Create(FAnnouncementLayout);
   AnnContainer.Parent := FAnnouncementLayout;
@@ -340,8 +337,7 @@ begin
   FLblNextAnnouncement.StyledSettings := [];
   FLblNextAnnouncement.TextSettings.Font.Size := 14; 
   FLblNextAnnouncement.TextSettings.FontColor := CLR_ACCENT; // Blue time?
-  // Actually text is "Time Message". 
-  // I will leave logic as is for text content but style it.
+  FLblNextAnnouncement.TextSettings.FontColor := CLR_ACCENT; // Blue time?
   FLblNextAnnouncement.TextSettings.HorzAlign := TTextAlign.Leading;
   FLblNextAnnouncement.TextSettings.VertAlign := TTextAlign.Center;
   
@@ -456,7 +452,6 @@ begin
   FSetupPanel.Align := TAlignLayout.Top;
   FSetupPanel.Height := 1500;
   FSetupPanel.Width := 1000;
-  FSetupPanel.Width := 1000;
   // Centering handled in Resize
 
   
@@ -465,7 +460,6 @@ begin
   FLblExamConfig.Parent := FSetupPanel;
   FLblExamConfig.Position.X := 0;
   FLblExamConfig.Position.Y := 16;
-  FLblExamConfig.Text := 'Exam Configuration';
   FLblExamConfig.Text := 'Exam Configuration';
   FLblExamConfig.StyledSettings := [];
   FLblExamConfig.TextSettings.Font.Size := 20;
@@ -867,11 +861,7 @@ begin
   LblRead.TextSettings.Font.Size := 12;
   LblRead.TextSettings.Font.Style := [TFontStyle.fsBold];
   LblRead.TextSettings.FontColor := CLR_TEXT_SECONDARY;
-  // We need to link the label position to the rect in Resize logic or just set it here? 
-  // For now, assume static until next resize.
-  // Actually, let's tag them or store them to update in FormResize if needed. 
-  // But wait, the Rects are sized in ShowTimer. We need to update labels there too.
-  // Let's just create them here. Tag = 1 for Read Label.
+  LblRead.TextSettings.FontColor := CLR_TEXT_SECONDARY;
   LblRead.Tag := 10; 
 
   
@@ -938,14 +928,6 @@ begin
   FProgressReadFill.Width := 0;
   FProgressReadFill.Fill.Color := CLR_PHASE_READ; // Bright
   FProgressReadFill.Stroke.Kind := TBrushKind.None;
-  // Dim parent
-  FProgressRead.Fill.Color := TAlphaColorRec.Black; 
-
-  // If we set opacity on parent, child is also transparent.
-  // Better: Set Parent Color to Darker version, Child Color to Bright.
-  FProgressRead.Fill.Color := $FF2E1B4E; // Very dark purple manually calculated or fixed. 
-  // Let's use simple opacity approach: 
-  // Parent is background (dark/dim). Child is fill (bright).
   FProgressRead.Fill.Color := $40A855F7; // 25% Alpha of Purple
   
   
@@ -1011,8 +993,6 @@ begin
   FButtonLayout.Height := 60;
   
   // Buttons centered directly in ButtonLayout
-  // Total button width: 140+20+140+20+160+20+140 = 640px (with 20px gaps)
-  // Center offset: (ParentWidth - 640) / 2
   // For ~1000px usable width, start at X = 180
   var BtnStartX: Single := 180;
   
@@ -1033,8 +1013,7 @@ begin
   FBtnStop.OnClick := BtnStopClick;
   
   // Pause Overlay (Hidden by default)
-  // Create BEFORE buttons to be behind them? No, we want it ON TOP to block interaction,
-  // BUT we must handle clicks on it to resume.
+  // We want it ON TOP to block interaction, BUT handle clicks on it.
   FPauseOverlay := TRectangle.Create(FTimerPanel);
   FPauseOverlay.Parent := FTimerPanel;
   FPauseOverlay.Align := TAlignLayout.Client;
@@ -1575,9 +1554,7 @@ begin
   // Restart current phase
   FTimer.Stop; // Pause first
   
-  // Logic to restart the *current* round phase
-  // We can just re-call the logic from OnPhaseChange for the *previous* phase?
-  // Or just manually restart based on CurrentPhase.
+  // Restart current phase logic
   
   case FTimer.CurrentPhase of
     phRead: FTimer.Start(StrToIntDef(FEdtReadTime.Text, 60), phRead);
@@ -1690,7 +1667,6 @@ begin
   FConfig.SetDefaults;
   FConfig.NumCandidates := StrToIntDef(FEdtCandidates.Text, 5);
   FConfig.ReadTime := StrToIntDef(FEdtReadTime.Text, 60);
-  FConfig.ReadTime := StrToIntDef(FEdtReadTime.Text, 60);
   FConfig.ChangeoverTime := StrToIntDef(FEdtChangeover.Text, 60);
   
   // Save Stations from UI
@@ -1728,12 +1704,7 @@ begin
                         if Bg.Children[0] is TEdit then
                         begin
                              var Edt := TEdit(Bg.Children[0]);
-                             // We need to know WHICH edit it is.
-                             // CreateStationRow logic:
-                             // Name: Left=5 (inside 220 width bg) - Wait, Position X distinguishes them.
-                             // NameBg X=120
-                             // ActBg X=400
-                             // FbkBg X=475
+                             // NameBg X=120, ActBg X=400, FbkBg X=475
                              
                              if Bg.Position.X = 120 then EName := Edt
                              else if Bg.Position.X = 400 then EAct := Edt
@@ -1813,13 +1784,7 @@ begin
   
   if FTimer.CurrentPhase = phActivity then
   begin
-       // Check for 2 min warning
-       // We need to parse the config or just hardcode checking based on standard remaining times?
-       // Config has "TwoMinWarningEnabled".
-       // 2 mins = 120s. 1 min = 60s. 
-       // If Time > 120, next is 2 min.
-       // If Time > 60, next is 1 min.
-       // If Time < 60, next is End.
+       // Check for 2 min, 1 min, or End warnings
        
        var Ann := FConfig.Announcements;
        
@@ -1844,8 +1809,6 @@ begin
   begin
       FLblNextAnnouncement.Text := NextTime + '   ' + NextText;
       FLblNextAnnouncement.TextSettings.FontColor := CLR_ACCENT; 
-      // Make time blue/accent? 
-      // For now just simple text.
   end
   else
   begin
@@ -1966,9 +1929,6 @@ begin
                  begin
                       // Normal Feedback Phase
                       // Station Duration is Feedback Time
-                      // But we need to ensure we don't double count?
-                      // If we are in global Feedback phase, we are just counting down Feedback time?
-                      // Logic: The global phase logic assumes everyone is in Feedback.
                       StationDuration := Station.FeedbackTime * 60;
                       StRem := StationDuration - Elapsed;
                  end;
@@ -2369,7 +2329,6 @@ end;
 procedure TMainForm.UpdateProgress(AProgress: Double);
 begin
   // Calculate total seconds for current phase to determine progress width
-  // But AProgress is already 0..1 from uTimerLogic
   var FullWidth: Single;
 
   // Reset all fills to 0
