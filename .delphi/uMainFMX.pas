@@ -853,7 +853,6 @@ begin
 
   // Add Label for Read
   var LblRead: TLabel := TLabel.Create(FProgressLayout);
-  LblRead.Parent := FProgressRead; // Parent to Rect so it moves with it? No, Parent to Layout
   LblRead.Parent := FProgressLayout;
   LblRead.Position.Y := 5;
   LblRead.Text := 'READ';
@@ -955,7 +954,7 @@ begin
   FProgressChangeoverFill.Stroke.Kind := TBrushKind.None;
   FProgressChangeover.Fill.Color := $40F59E0B;
   
-  // Buttons moved to Bottom Stack logic below (after Candidates)
+
   
   // === CANDIDATES GRID (Fixed position, scaled in FormResize) ===
   FCandidatesScrollBox := TScrollBox.Create(FTimerPanel);
@@ -1013,7 +1012,6 @@ begin
   FBtnStop.OnClick := BtnStopClick;
   
   // Pause Overlay (Hidden by default)
-  // We want it ON TOP to block interaction, BUT handle clicks on it.
   FPauseOverlay := TRectangle.Create(FTimerPanel);
   FPauseOverlay.Parent := FTimerPanel;
   FPauseOverlay.Align := TAlignLayout.Client;
@@ -1552,9 +1550,9 @@ end;
 procedure TMainForm.BtnRestartClick(Sender: TObject);
 begin
   // Restart current phase
-  FTimer.Stop; // Pause first
+  FTimer.Stop;
   
-  // Restart current phase logic
+
   
   case FTimer.CurrentPhase of
     phRead: FTimer.Start(StrToIntDef(FEdtReadTime.Text, 60), phRead);
@@ -1622,7 +1620,6 @@ begin
         
         FTrkRate.Value := NewConfig.VoiceRate;
         FTrkVolume.Value := NewConfig.VoiceVolume;
-        // Voice selection omitted for simplicity as names vary by OS, but potentially map it
         
         // Announcements
         with NewConfig.Announcements do
@@ -1943,7 +1940,7 @@ begin
              end
              else
              begin
-                  // Rest Station: Show global phase remaining time
+// Rest Station: Show global phase remaining time
                   LblTimer.Text := FormatSeconds(Round(SecondsRemaining));
                   
                   if SecondsRemaining <= 0 then 
@@ -2315,9 +2312,6 @@ begin
              else
              begin
                  // Fetch Real Station Name
-                 // StationIdx is 1-based here, Manager uses 0-based? 
-                 // Manager Add returns ID. List is TList. 
-                 // Let's use GetByIndex (0-based)
                  var RealStation := StationsManager.GetByIndex(StationIdx - 1);
                  LblStation.Text := 'Station ' + IntToStr(StationIdx) + ': ' + RealStation.Name;
              end;
@@ -2331,7 +2325,6 @@ begin
   // Calculate total seconds for current phase to determine progress width
   var FullWidth: Single;
 
-  // Reset all fills to 0
   FProgressReadFill.Width := 0;
   FProgressActivityFill.Width := 0;
   FProgressFeedbackFill.Width := 0;
