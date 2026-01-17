@@ -232,6 +232,12 @@ This is an internal NHS application developed for Clinical Education purposes.
 - **No voice?** Verify Windows SAPI voices are installed (Control Panel → Speech)
 - **Build error?** Ensure all unit dependencies are in the search path
 
+### Installation Issues
+- **"Windows protected your PC" (SmartScreen)**:
+  - This warning appears because the application allows native system access and is not digitally signed (common for internal tools).
+  - To run: Click **More info** (under the text) → **Run anyway**.
+  - This only happens the first time you run it.
+
 ---
 
 ## 🆕 Version History
