@@ -27,6 +27,8 @@ type
     FLblSubtitle: TLabel;
     FBtnMute: TRectangle;
     FBtnMuteIcon: TLabel;
+    FBtnKiosk: TRectangle;
+    FBtnKioskIcon: TLabel;
     
     // Main content container
     // Layouts
@@ -101,12 +103,14 @@ type
     FProgressChangeoverFill: TRectangle;
     
     // Timer controls
+    FButtonLayout: TLayout;
     FBtnPause: TRectangle;
     FBtnSkip: TRectangle;
     FBtnRestart: TRectangle;
     FBtnStop: TRectangle;
     
     // Candidates
+    FCandidatesHeader: TLabel;
     FCandidatesScrollBox: TScrollBox;
     FCandidatesLayout: TLayout;
     FCandidateCards: TList<TRectangle>;
@@ -164,6 +168,7 @@ type
 
     
     procedure BtnMuteClick(Sender: TObject);
+    procedure BtnKioskClick(Sender: TObject);
     procedure BtnTestVoiceClick(Sender: TObject);
     procedure BtnAddStationClick(Sender: TObject);
     procedure BtnDeleteStationClick(Sender: TObject);
@@ -173,8 +178,8 @@ type
     procedure BtnSkipClick(Sender: TObject);
     procedure BtnRestartClick(Sender: TObject);
     procedure BtnSaveClick(Sender: TObject);
-    procedure BtnImportClick(Sender: TObject);
     procedure BtnExportClick(Sender: TObject);
+    procedure BtnImportClick(Sender: TObject);
     procedure TrackRateChange(Sender: TObject);
     procedure TrackVolumeChange(Sender: TObject);
     procedure OnStationTimeChange(Sender: TObject);
@@ -279,12 +284,13 @@ begin
   
 
   
-  // Announcement Section (Global Bottom Stack)
+  // Announcement Section (Fixed position, scaled in FormResize)
   FAnnouncementLayout := TLayout.Create(Self);
   FAnnouncementLayout.Parent := Self;
-  FAnnouncementLayout.Align := TAlignLayout.Bottom;
-  FAnnouncementLayout.Height := 90; // Header + Box + Margins
-  FAnnouncementLayout.Margins.Bottom := 0; 
+  FAnnouncementLayout.Align := TAlignLayout.None;
+  FAnnouncementLayout.Position.Y := 600;  // Will be scaled in FormResize
+  FAnnouncementLayout.Width := 1200;
+  FAnnouncementLayout.Height := 80; // Header + Box + Margins
   FAnnouncementLayout.Visible := False; // Hidden in setup
   
   // Header "NEXT ANNOUNCEMENT"
@@ -302,7 +308,7 @@ begin
   AnnContainer.Parent := FAnnouncementLayout;
   AnnContainer.Align := TAlignLayout.Center;
   AnnContainer.Width := 1000; // Constrain width
-  AnnContainer.Height := 90;
+  AnnContainer.Height := 80;
   
   LblAnnHeader.Parent := AnnContainer;
   LblAnnHeader.Margins.Left := 0;
@@ -409,6 +415,30 @@ begin
   FBtnMuteIcon.TextSettings.Font.Size := 18;
   FBtnMuteIcon.TextSettings.HorzAlign := TTextAlign.Center;
   FBtnMuteIcon.HitTest := False;
+  
+  // Kiosk button (Added beside Mute)
+  FBtnKiosk := TRectangle.Create(FHeaderLayout);
+  FBtnKiosk.Parent := FHeaderLayout;
+  FBtnKiosk.Align := TAlignLayout.Right; // Stacks to left of Mute
+  FBtnKiosk.Width := 44;
+  FBtnKiosk.Height := 44;
+  FBtnKiosk.Margins.Top := 8;
+  FBtnKiosk.Margins.Right := 10; // Gap between Kiosk and Mute
+  FBtnKiosk.XRadius := 8;
+  FBtnKiosk.YRadius := 8;
+  FBtnKiosk.Fill.Color := CLR_BG_ELEVATED;
+  FBtnKiosk.Stroke.Color := CLR_BORDER;
+  FBtnKiosk.Cursor := crHandPoint;
+  FBtnKiosk.OnClick := BtnKioskClick;
+  
+  FBtnKioskIcon := TLabel.Create(FBtnKiosk);
+  FBtnKioskIcon.Parent := FBtnKiosk;
+  FBtnKioskIcon.Align := TAlignLayout.Client;
+  FBtnKioskIcon.Text := '⛶'; // Fullscreen icon
+  FBtnKioskIcon.StyledSettings := [];
+  FBtnKioskIcon.TextSettings.Font.Size := 18;
+  FBtnKioskIcon.TextSettings.HorzAlign := TTextAlign.Center;
+  FBtnKioskIcon.HitTest := False;
 end;
 
 procedure TMainForm.CreateSetupPanel;
@@ -943,36 +973,40 @@ begin
   
   // Buttons moved to Bottom Stack logic below (after Candidates)
   
-  // === CANDIDATES GRID (Bottom-Aligned, bottommost) ===
+  // === CANDIDATES GRID (Fixed position, scaled in FormResize) ===
   FCandidatesScrollBox := TScrollBox.Create(FTimerPanel);
   FCandidatesScrollBox.Parent := FTimerPanel;
-  FCandidatesScrollBox.Align := TAlignLayout.Bottom;
-  FCandidatesScrollBox.Height := 230; // 2 rows of candidates
+  FCandidatesScrollBox.Align := TAlignLayout.None;
+  FCandidatesScrollBox.Position.Y := 460;  // Will be scaled in FormResize
+  FCandidatesScrollBox.Width := 1200;
+  FCandidatesScrollBox.Height := 230;
   FCandidatesScrollBox.ShowScrollBars := True;
   
   FCandidatesLayout := TLayout.Create(FCandidatesScrollBox);
   FCandidatesLayout.Parent := FCandidatesScrollBox;
   FCandidatesLayout.Align := TAlignLayout.None;
   
-  // === "CANDIDATES" HEADER (Bottom-Aligned, above grid) ===
-  var LblCandHeader := TLabel.Create(FTimerPanel);
-  LblCandHeader.Parent := FTimerPanel;
-  LblCandHeader.Align := TAlignLayout.Bottom;
-  LblCandHeader.Height := 24;
-  LblCandHeader.Margins.Bottom := 5;
-  LblCandHeader.Text := 'CANDIDATES';
-  LblCandHeader.StyledSettings := [];
-  LblCandHeader.TextSettings.Font.Size := 12;
-  LblCandHeader.TextSettings.FontColor := CLR_TEXT_MUTED;
-  LblCandHeader.TextSettings.Font.Style := [TFontStyle.fsBold];
-  LblCandHeader.TextSettings.HorzAlign := TTextAlign.Center;
+  // === "CANDIDATES" HEADER (Fixed position, scaled in FormResize) ===
+  FCandidatesHeader := TLabel.Create(FTimerPanel);
+  FCandidatesHeader.Parent := FTimerPanel;
+  FCandidatesHeader.Align := TAlignLayout.None;
+  FCandidatesHeader.Position.Y := 440;  // Will be scaled in FormResize
+  FCandidatesHeader.Width := 1200;
+  FCandidatesHeader.Height := 24;
+  FCandidatesHeader.Text := 'CANDIDATES';
+  FCandidatesHeader.StyledSettings := [];
+  FCandidatesHeader.TextSettings.Font.Size := 12;
+  FCandidatesHeader.TextSettings.FontColor := CLR_TEXT_MUTED;
+  FCandidatesHeader.TextSettings.Font.Style := [TFontStyle.fsBold];
+  FCandidatesHeader.TextSettings.HorzAlign := TTextAlign.Center;
   
-  // === CONTROL BUTTONS (Bottom-Aligned, topmost of bottom stack) ===
-  var ButtonLayout := TLayout.Create(FTimerPanel);
-  ButtonLayout.Parent := FTimerPanel;
-  ButtonLayout.Align := TAlignLayout.Bottom;
-  ButtonLayout.Height := 60;
-  ButtonLayout.Margins.Bottom := 10;
+  // === CONTROL BUTTONS (Fixed position, will be scaled in FormResize) ===
+  FButtonLayout := TLayout.Create(FTimerPanel);
+  FButtonLayout.Parent := FTimerPanel;
+  FButtonLayout.Align := TAlignLayout.None;
+  FButtonLayout.Position.Y := 380;  // Will be scaled in FormResize
+  FButtonLayout.Width := 1200;
+  FButtonLayout.Height := 60;
   
   // Buttons centered directly in ButtonLayout
   // Total button width: 140+20+140+20+160+20+140 = 640px (with 20px gaps)
@@ -980,15 +1014,15 @@ begin
   // For ~1000px usable width, start at X = 180
   var BtnStartX: Single := 180;
   
-  FBtnPause := CreateButton(ButtonLayout, 'Pause', BtnStartX, 6, 140, 48, True);
+  FBtnPause := CreateButton(FButtonLayout, 'Pause', BtnStartX, 6, 140, 48, True);
   TRectangle(FBtnPause).Fill.Color := CLR_WARNING;
   TLabel(TRectangle(FBtnPause).Children[0]).TextSettings.FontColor := $FF1A1A1A;
   
-  FBtnSkip := CreateButton(ButtonLayout, 'Skip Phase', BtnStartX + 160, 6, 140, 48, False);
+  FBtnSkip := CreateButton(FButtonLayout, 'Skip Phase', BtnStartX + 160, 6, 140, 48, False);
   
-  FBtnRestart := CreateButton(ButtonLayout, 'Restart Round', BtnStartX + 320, 6, 160, 48, False);
+  FBtnRestart := CreateButton(FButtonLayout, 'Restart Round', BtnStartX + 320, 6, 160, 48, False);
   
-  FBtnStop := CreateButton(ButtonLayout, 'Stop Exam', BtnStartX + 500, 6, 140, 48, False);
+  FBtnStop := CreateButton(FButtonLayout, 'Stop Exam', BtnStartX + 500, 6, 140, 48, False);
   TRectangle(FBtnStop).Fill.Color := CLR_DANGER;
   
   FBtnPause.OnClick := BtnPauseClick;
@@ -1039,8 +1073,10 @@ procedure TMainForm.CreateFooter;
 begin
   FFooterLayout := TLayout.Create(Self);
   FFooterLayout.Parent := Self;
-  FFooterLayout.Align := TAlignLayout.Bottom;
-  FFooterLayout.Height := 100;
+  FFooterLayout.Align := TAlignLayout.None;
+  FFooterLayout.Position.Y := 700; // Will be scaled in FormResize
+  FFooterLayout.Width := 1200;
+  FFooterLayout.Height := 100; // Increased to fit all text
   
   FLblShortcuts := TLabel.Create(FFooterLayout);
   FLblShortcuts.Parent := FFooterLayout;
@@ -2081,6 +2117,7 @@ begin
   FScrollBox.Visible := True;
   if Assigned(FAnnouncementLayout) then FAnnouncementLayout.Visible := False;
   FIsExamRunning := False;
+  FormResize(Self); // Update Footer alignment
 end;
 
 procedure TMainForm.ShowTimer;
@@ -2089,6 +2126,7 @@ begin
   FTimerPanel.Visible := True;
   if Assigned(FAnnouncementLayout) then FAnnouncementLayout.Visible := True;
   FIsExamRunning := True;
+  FormResize(Self); // Update Footer alignment & layout
   
   FLblRound.Text := 'Round ' + IntToStr(FCurrentRound);
   FLblRoundInfo.Text := FEdtCandidates.Text + ' candidates at ' + IntToStr(StationsManager.GetCount) + ' stations';
@@ -2361,10 +2399,28 @@ begin
   end;
 end;
 
+procedure TMainForm.BtnKioskClick(Sender: TObject);
+begin
+  if BorderStyle = TFmxFormBorderStyle.None then
+  begin
+    BorderStyle := TFmxFormBorderStyle.Sizeable;
+    WindowState := TWindowState.wsMaximized;
+    FBtnKioskIcon.Text := '⛶';
+  end
+  else
+  begin
+    BorderStyle := TFmxFormBorderStyle.None;
+    WindowState := TWindowState.wsMaximized;
+    FBtnKioskIcon.Text := '✕';
+  end;
+end;
+
 procedure TMainForm.FormResize(Sender: TObject);
 var
   TargetWidth: Single;
   M: Single;
+  ScaleY: Single;
+  RefHeight: Single;
 begin
   TargetWidth := 1000;
   if Width < 1024 then TargetWidth := Width - 48;
@@ -2377,30 +2433,90 @@ begin
     FSetupPanel.Margins.Right := M;
   end;
   
+  // Scale factor based on height (reference = 800)
+  RefHeight := 800;
+  ScaleY := Height / RefHeight;
+  
   if Assigned(FTimerPanel) and FTimerPanel.Visible then
   begin
-    // Center Labels
-    FLblCountdown.Width := FTimerPanel.Width;
-    FLblCountdown.Position.X := 0;
+    // Scale Y positions and sizes for timer elements (Ultra Compact - Header Bleed V2)
+    if Assigned(FPhaseBadge) then
+    begin
+      // Move badge UP into the Header empty space (centered)
+      FPhaseBadge.Position.Y := -65 * ScaleY; 
+      FPhaseBadge.Height := 30 * ScaleY;
+    end;
     
-    FLblRound.Width := FTimerPanel.Width;
-    FLblRound.Position.X := 0;
+    if Assigned(FLblCountdown) then
+    begin
+      FLblCountdown.Position.Y := -25 * ScaleY; // Starts overlapping panel top
+      FLblCountdown.Height := 120 * ScaleY;
+      FLblCountdown.TextSettings.Font.Size := 100 * ScaleY;
+      FLblCountdown.Width := FTimerPanel.Width;
+      FLblCountdown.Position.X := 0;
+    end;
     
-    FLblRoundInfo.Width := FTimerPanel.Width;
-    FLblRoundInfo.Position.X := 0;
+    if Assigned(FLblRound) then
+    begin
+      FLblRound.Position.Y := 90 * ScaleY;
+      FLblRound.Height := 40 * ScaleY;
+      FLblRound.TextSettings.Font.Size := 28 * ScaleY;
+      FLblRound.Width := FTimerPanel.Width;
+      FLblRound.Position.X := 0;
+    end;
     
-    // Center Progress Bar (Fixed 1000px)
-    FProgressLayout.Width := 1000;
-    FProgressLayout.Position.X := (FTimerPanel.Width - 1000) / 2;
+    if Assigned(FLblRoundInfo) then
+    begin
+      FLblRoundInfo.Position.Y := 130 * ScaleY;
+      FLblRoundInfo.Height := 24 * ScaleY;
+      FLblRoundInfo.TextSettings.Font.Size := 16 * ScaleY;
+      FLblRoundInfo.Width := FTimerPanel.Width;
+      FLblRoundInfo.Position.X := 0;
+    end;
     
-    // Center Buttons (Total Width ~640px)
-    // Pause(140) + 20 + Skip(140) + 20 + Restart(160) + 20 + Stop(140) = 640
+    if Assigned(FProgressLayout) then
+    begin
+      FProgressLayout.Position.Y := 160 * ScaleY;
+      FProgressLayout.Height := 40 * ScaleY;
+      FProgressLayout.Width := 1000;
+      FProgressLayout.Position.X := (FTimerPanel.Width - 1000) / 2;
+    end;
+    
+    // Scale button layout position and size
+    var BtnScale := ScaleY;
+    var BtnHeight := 48 * BtnScale;
     var BtnStartX := (FTimerPanel.Width - 640) / 2;
     
+    if Assigned(FButtonLayout) then
+    begin
+      FButtonLayout.Position.Y := 210 * ScaleY;
+      FButtonLayout.Height := 60 * ScaleY;
+      FButtonLayout.Width := FTimerPanel.Width;
+    end;
+    
     FBtnPause.Position.X := BtnStartX;
+    FBtnPause.Height := BtnHeight;
     FBtnSkip.Position.X := BtnStartX + 160;
+    FBtnSkip.Height := BtnHeight;
     FBtnRestart.Position.X := BtnStartX + 320;
+    FBtnRestart.Height := BtnHeight;
     FBtnStop.Position.X := BtnStartX + 500;
+    FBtnStop.Height := BtnHeight;
+    
+    // Scale Candidates Header position
+    if Assigned(FCandidatesHeader) then
+    begin
+      FCandidatesHeader.Position.Y := 270 * ScaleY;
+      FCandidatesHeader.Width := FTimerPanel.Width;
+    end;
+    
+    // Scale Candidates Scrollbox position and size    
+    if Assigned(FCandidatesScrollBox) then
+    begin
+      FCandidatesScrollBox.Position.Y := 300 * ScaleY;
+      FCandidatesScrollBox.Height := 230 * ScaleY;
+      FCandidatesScrollBox.Width := FTimerPanel.Width;
+    end;
     
     // Center Next Announcement
     FLblNextAnnouncement.Width := FTimerPanel.Width;
@@ -2413,6 +2529,34 @@ begin
          FCandidatesLayout.Position.X := (FTimerPanel.Width - FCandidatesLayout.Width) / 2
        else
          FCandidatesLayout.Position.X := 0;
+    end;
+    
+    // Scale Announcement Layout position
+    if Assigned(FAnnouncementLayout) then
+    begin
+      FAnnouncementLayout.Position.Y := 620 * ScaleY;
+      FAnnouncementLayout.Width := Width;
+    end;
+    
+    end;
+
+  // Footer Logic (Global)
+  if Assigned(FFooterLayout) then
+  begin
+    if Assigned(FTimerPanel) and FTimerPanel.Visible then
+    begin
+       // Timer Mode: Fixed/Scaled
+       FFooterLayout.Align := TAlignLayout.None;
+       FFooterLayout.Position.Y := 700 * ScaleY;
+       FFooterLayout.Width := Width;
+       FFooterLayout.Height := 100 * ScaleY;
+    end
+    else
+    begin
+       // Setup Mode: Bottom aligned
+       FFooterLayout.Align := TAlignLayout.Bottom;
+       FFooterLayout.Height := 100;
+       FFooterLayout.Width := Width;
     end;
   end;
 end;
